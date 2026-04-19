@@ -336,7 +336,7 @@ func (s *State) handleInput(raw string) {
 	pid, force, ok := parseKill(parts)
 	if !ok {
 		s.lastMessageType = "error"
-		s.lastMessage = "usage: kill <pid> | kill -9 <pid> | kill <pid> -9"
+		s.lastMessage = "usage: kill <pid> | kill -9 <pid> | kill <pid> -9 | kill -s SIGKILL <pid> | kill -SIGKILL <pid>"
 		return
 	}
 
@@ -454,35 +454,72 @@ func (s *State) historyNext() {
 }
 
 func parseKill(parts []string) (pid int, force bool, ok bool) {
-	if len(parts) == 2 {
-		pid, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return 0, false, false
-		}
-		return pid, false, true
-	}
-
-	if len(parts) != 3 {
+	if len(parts) < 2 {
 		return 0, false, false
 	}
 
-	if parts[1] == "-9" {
-		pid, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return 0, false, false
+	pidSet := false
+	args := parts[1:]
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+
+		switch {
+		case arg == "-s":
+			if i+1 >= len(args) {
+				return 0, false, false
+			}
+			next := args[i+1]
+			if !isKillSignal(next) {
+				return 0, false, false
+			}
+			force = true
+			i++
+
+		case strings.HasPrefix(arg, "-s") && len(arg) > 2:
+			sig := strings.TrimPrefix(arg, "-s")
+			if !isKillSignal(sig) {
+				return 0, false, false
+			}
+			force = true
+
+		case strings.HasPrefix(arg, "-"):
+			sig := strings.TrimPrefix(arg, "-")
+			if !isKillSignal(sig) {
+				return 0, false, false
+			}
+			force = true
+
+		default:
+			if pidSet {
+				return 0, false, false
+			}
+
+			parsedPID, err := strconv.Atoi(arg)
+			if err != nil {
+				return 0, false, false
+			}
+
+			pid = parsedPID
+			pidSet = true
 		}
-		return pid, true, true
 	}
 
-	if parts[2] == "-9" {
-		pid, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return 0, false, false
-		}
-		return pid, true, true
+	if !pidSet {
+		return 0, false, false
 	}
 
-	return 0, false, false
+	return pid, force, true
+}
+
+func isKillSignal(sig string) bool {
+	normalized := strings.ToUpper(strings.TrimSpace(sig))
+	switch normalized {
+	case "9", "KILL", "SIGKILL":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *State) findProcess(pid int) int {
