@@ -8,6 +8,12 @@
 
 version: 2
 
+brews:
+  - repository:
+      owner: nuskey8
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
