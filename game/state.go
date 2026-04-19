@@ -95,7 +95,7 @@ func New() *State {
 		rng:             rand.New(rand.NewSource(seed)),
 		processes:       make([]Process, 0, 64),
 		killAllRemain:   3,
-		spawnInterval:   3 * time.Second,
+		spawnInterval:   3*time.Second + 500*time.Millisecond,
 		lastMessage:     "",
 		lastMessageType: "info",
 		startedAt:       time.Now(),
@@ -209,7 +209,7 @@ func (s *State) tick(now time.Time) {
 
 	toNextBurst := now.Sub(s.nextBurst)
 	if s.score >= 100 && toNextBurst >= 0 {
-		s.nextBurst = now.Add(5 + time.Duration(s.rng.Intn(15))*time.Second)
+		s.nextBurst = now.Add(7 + time.Duration(s.rng.Intn(16))*time.Second)
 		burst := 1 + s.rng.Intn(3)
 		s.spawn(burst)
 		s.lastMessage = fmt.Sprintf("burst detected: +%d processes", burst)
@@ -262,11 +262,11 @@ func (s *State) randomPID() int {
 
 func (s *State) currentPIDRange() (minPID int, maxPID int) {
 	score := s.score
-	if score < 100 {
+	if score < 200 {
 		return 100, 999
-	} else if score < 300 {
+	} else if score < 800 {
 		return 1000, 9999
-	} else if score < 600 {
+	} else if score < 1600 {
 		return 10000, 99999
 	} else {
 		return 100000, 999999
