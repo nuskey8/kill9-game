@@ -70,7 +70,7 @@ type State struct {
 	quitRequested   bool
 	killAllRemain   int
 	lastSpawn       time.Time
-	lastBurst       time.Time
+	nextBurst       time.Time
 	spawnInterval   time.Duration
 	lastMessage     string
 	lastMessageType string
@@ -192,7 +192,7 @@ func (s *State) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *State) tick(now time.Time) {
 	if s.lastSpawn.IsZero() {
 		s.lastSpawn = now
-		s.lastBurst = now
+		s.nextBurst = now.Add(20 * time.Second)
 		return
 	}
 
@@ -207,8 +207,10 @@ func (s *State) tick(now time.Time) {
 		s.lastSpawn = now
 	}
 
-	if s.score >= 100 && now.Sub(s.lastBurst) >= 1*time.Second && s.rng.Float64() < 0.00666 {
-		burst := 2 + s.rng.Intn(4)
+	toNextBurst := now.Sub(s.nextBurst)
+	if s.score >= 100 && toNextBurst >= 0 {
+		s.nextBurst = now.Add(5 + time.Duration(s.rng.Intn(15))*time.Second)
+		burst := 1 + s.rng.Intn(3)
 		s.spawn(burst)
 		s.lastMessage = fmt.Sprintf("burst detected: +%d processes", burst)
 		s.lastMessageType = "warn"
@@ -294,7 +296,7 @@ func (s *State) recalculateRAM() {
 		}
 	}
 
-	ram := min(count*5+nrBonus*3, 100)
+	ram := min(count*4+nrBonus*3, 100)
 	s.ramPercent = ram
 }
 
