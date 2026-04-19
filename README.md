@@ -2,7 +2,7 @@
 
 A mini-game playable in the terminal, inspired by the kill command.
 
-https://github.com/nuskey8/kill9-game/blob/main/assets/gameplay.mp4
+<div><video src="https://github.com/nuskey8/kill9-game/blob/main/assets/gameplay.mp4" width="100%" controls></video></div>
 
 ## Install
 
